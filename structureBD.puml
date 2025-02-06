@@ -1,0 +1,59 @@
+@startuml
+title Database Structure
+
+
+entity Protein {
+    Protein_Id: integer <<PK>>
+    Entry_Name: String
+    Protein_Name: String
+    Sequence: String
+    Gene_Name: String
+    Organism: String
+}
+
+entity Drugs {
+    Drug_Id: String <<PK>>
+    Type: String
+    Name: String
+    Adverse_effects: String
+    Indications: String
+    -- Constraint: starts with 'DB' followed by 5 digits
+}
+
+entity Protein_Drug {
+    Protein_Id: integer <<PK>> <<FK>>
+    Drug_Id: String <<PK>> <<FK>>
+    General_Function: String
+    Specific_Function: String
+    Molecular_Weight: Float
+}
+
+entity ChEMBL {
+    ChEMBL_Id: String <<PK>>
+    Type: String
+    Bioactivity_data: JSON
+    -- Constraint: starts with 'CHEMBL' followed by an integer
+}
+
+entity Protein_Molecule {
+    Relationship_Id: integer <<PK>> <<FK>>
+    Protein_Id: String <<FK>>
+    Molecule_Id: String <<FK>>
+    Relationship: String
+    Preferred_Name: String
+    Target_Type: String
+}
+
+entity Drugs_Drugs {
+    Id_drug1: String <<PK>> <<FK>>
+    Id_drug2: String <<PK>> <<FK>>
+    Interaction: String
+    -- Constraint: Both IDs start with 'DB' followed by 5 digits
+}
+
+Protein "1" -- "*" Protein_Drug : has
+Drugs "1" -- "*" Protein_Drug : associated with
+Protein "1" -- "*" Protein_Molecule : interacts
+ChEMBL "1" -- "*" Protein_Molecule : associated with
+Drugs "1" -- "*" Drugs_Drugs : interacts
+@enduml
