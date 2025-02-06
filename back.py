@@ -9,9 +9,9 @@ def build_uniprot_query(params):
     Utilise "gene:" pour le nom du gène (le champ correct dans la requête).
     """
     query_parts = []
-    if params.get("gene_name"):
+    if params.get("gene_names"):
         # Utilisation de "gene:" pour filtrer sur le nom du gène
-        query_parts.append(f'gene:{params["gene_name"]}')
+        query_parts.append(f'gene:{params["gene_names"]}')
     if params.get("organism"):
         # La recherche par organisme se fait en mettant le nom entre guillemets
         query_parts.append(f'organism:"{params["organism"]}"')
@@ -30,7 +30,7 @@ def get_uniprot_data(query):
     """
     base_url = "https://rest.uniprot.org/uniprotkb/search"
     # Spécifie les champs à retourner : identifiant, nom, gènes, organisme, séquence, longueur, références PDB
-    fields = "accession,protein_name,genes,organism_name,sequence,length,xref_pdb"
+    fields = "accession,protein_name,gene_names,organism_name,sequence,length,xref_pdb"
     params = {
         "query": query,
         "format": "json",
@@ -43,7 +43,7 @@ def get_uniprot_data(query):
         return data.get("results", [])
     else:
         # En cas d'erreur, on retourne une liste vide
-        return []
+        return "error"
 
 def get_chembl_medication_data(gene_names, medication_name, medication_interaction):
     """
@@ -96,50 +96,9 @@ def get_chembl_medication_data(gene_names, medication_name, medication_interacti
         })
     return medications
 
-def get_drugbank_medication_data(a_voir):
-    target_url = "https://api.drugbank.com/v1/eu"
-    target_params = {"q": gene_names, "format": "json"}
-    target_response = requests.get(target_url, params=target_params)
-    if target_response.status_code != 200:
-        return []
-    
-    target_data = target_response.json()
-    targets = target_data.get("targets", [])
-    if not targets:
-        return []
-    
-    # Pour simplifier, on prend le premier target trouvé
-    chembl_target_id = targets[0].get("target_chembl_id")
-    if not chembl_target_id:
-        return []
-    
-    # 2. Recherche d'activités associées à ce target
-    activity_url = "https://www.ebi.ac.uk/chembl/api/data/activity.json"
-    # On peut essayer de filtrer par nom de médicament si fourni
-    activity_params = {
-        "target_chembl_id": chembl_target_id,
-        "molecule_pref_name": medication_name if medication_name else "",
-        "format": "json",
-        "limit": 5
-    }
-    activity_response = requests.get(activity_url, params=activity_params)
-    if activity_response.status_code != 200:
-        return []
-    
-    activity_data = activity_response.json()
-    medications = []
-    for act in activity_data.get("activities", []):
-        medications.append({
-            "name": act.get("molecule_pref_name", "Unknown"),
-            "interaction": "Unknown",  # Ce champ n'est pas fourni par l'API ChEMBL dans cet endpoint
-            "affinity": f"{act.get('standard_value', 'NA')} {act.get('standard_units', '')}",
-            "phase": "Unknown",       # Non disponible ici
-            "indication": "Unknown"   # Non disponible ici
-        })
-    return medications
-
 @app.route('/query', methods=['GET'])
 def query():
+    print("Hello !")
     # Récupération des filtres depuis les paramètres GET
     gene_names = request.args.get('gene_names', None)
     organism = request.args.get('organism', None)
@@ -155,6 +114,7 @@ def query():
         "ptm": ptm,
         "pdb": pdb
     })
+
     uniprot_results = get_uniprot_data(uniprot_query)
     print(uniprot_results)
 
