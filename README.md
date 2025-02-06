@@ -1,6 +1,14 @@
 # MOM1-GPER
 
-
+## Execution :
+In a first terminal execute the command:
+```
+py .\back.py
+```
+In a second terminal execute the command:
+```
+streamlit run ./front.py
+```
 
 ## Getting started
 
