@@ -18,11 +18,9 @@ list_field = [
         "DOI ID"
     ]
 
-def import_csv(csv_file):
-    df = pd.read_csv(csv_file)
-    return df
+df = pd.read_csv("uniprot.csv")
 
-def generate_data(df): #Renvoie un dictionnaire ou les clés 
+def generate_data(): #Renvoie un dictionnaire ou les clés 
     #sont les attributs et les valeurs les listes sans redondance 
     #contenant les valeurs possibles de l'attribut
     data = {}
@@ -34,7 +32,7 @@ def generate_data(df): #Renvoie un dictionnaire ou les clés
 def get_data(data,field): #Renvoie la liste des valeurs pour un attribut donné
     return data.get(field, None)
 
-def filter(df,field,field_value): #Renvoie la liste des indexs de lignes de df pour chaque 
+def filter(field,field_value): #Renvoie la liste des indexs de lignes de df pour chaque 
     #ligne qui matche field==field_value
 
     #La première ligne contenant des données correspont à l'index 0
