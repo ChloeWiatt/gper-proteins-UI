@@ -10,7 +10,7 @@ list_field = [
         "Length",
         "Mass",
         "Tissue specificity",
-        "Subcellular location",
+        "Subcellular location [CC]",
         "Function [CC]",
         "Involvement in disease",
         "Mutagenesis",
@@ -23,7 +23,7 @@ df = pd.read_csv("uniprot.csv")
 def generate_data(): #Renvoie un dictionnaire ou les clés 
     #sont les élements de lists_field et les valeurs les listes sans redondance 
     #contenant les valeurs possibles de l'attribut
-    data={column:df[column].unique().tolist() for column in list_field if column in df.columns}
+    data={column:df[column].unique().tolist() for column in list_field}
     return data
 
 def get_data(data,field): #Renvoie la liste des valeurs pour un attribut donné
