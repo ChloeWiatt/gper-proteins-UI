@@ -34,8 +34,8 @@ def filter(fields,field_values): #Renvoie la liste des indexs de lignes de df po
     #La première ligne contenant des données correspont à l'index 0
     request=True
     for field,value in zip(fields, field_values):
-        contition &= (df[field]==value)
-    filtered_df =df.loc(request)
+        request &= (df[field]==value)
+    filtered_df =df.loc[request]
     return filtered_df.index.tolist()
 
 def get_values_for_rows(list_index, list_fields):#Renvoie un dictionnaire où les clés sont les attributs de list_fields
