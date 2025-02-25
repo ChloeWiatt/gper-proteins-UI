@@ -21,7 +21,10 @@ with st.sidebar:
         uniprot_choices = []
         for key,values in filters_uniprot.items():
             with st.expander(key):
-                uniprot_choices.append(st.multiselect("", options=values)) 
+                if key in ["Length","Mass"]  :
+                    uniprot_choices.append(st.slider("Select range", min_value=min(values), max_value=max(values), value=(min(values), max(values))))
+                else:
+                    uniprot_choices.append(st.multiselect("", options=values)) 
     
     with drugbank:
         drugbank_choices = []
@@ -79,14 +82,14 @@ with st.container():
     # Création des cartes cliquables
     with st.expander(f"🔬 {filtered_results['Entry Name']} | {filtered_results['Organism']}"):
             cols = st.columns([1,3,2])
-            with cols[0]:
-                st.image(filtered_results.get('preview_image', 'default_protein.png'))
-            with cols[1]:
-                st.markdown(f"**{filtered_results['Protein names']}**  \n`{filtered_results['Gene names']}`")
-                st.caption(f"📏 Longueur: {filtered_results['Length']} | 🧬 Mass: {filtered_results['Mass']} kDa")
-            with cols[2]:
-                st.metric("Résolution", f"{filtered_results['resolution']} Å")
-                st.button("Voir détails", key=filtered_results['id'], on_click=show_details, args=(filtered_results,))
+            #with cols[0]:
+                #st.image(filtered_results.get('preview_image', 'default_protein.png'))
+            # with cols[1]:
+            #     st.markdown(f"**{filtered_results['Protein names']}**  \n`{filtered_results['Gene names']}`")
+            #     st.caption(f"📏 Longueur: {filtered_results['Length']} | 🧬 Mass: {filtered_results['Mass']} kDa")
+            # with cols[2]:
+            #     st.metric("Résolution", f"{filtered_results['resolution']} Å")
+            #     st.button("Voir détails", key=filtered_results['id'], on_click=show_details, args=(filtered_results,))
 
 
 ##Section 3 : panneau de détails dynamique
