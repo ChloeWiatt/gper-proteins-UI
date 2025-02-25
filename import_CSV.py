@@ -21,16 +21,13 @@ list_field = [
 df = pd.read_csv("uniprot.csv")
 
 def generate_data(): #Renvoie un dictionnaire ou les clés 
-    #sont les attributs et les valeurs les listes sans redondance 
+    #sont les élements de lists_field et les valeurs les listes sans redondance 
     #contenant les valeurs possibles de l'attribut
-    data = {}
-    for column in df.columns:
-        data_column = df[column].unique().tolist()
-        data[column] = data_column
+    data={column:df[column].unique().tolist() for column in list_field if column in df.columns}
     return data
 
 def get_data(data,field): #Renvoie la liste des valeurs pour un attribut donné
-    return data.get(field, None)
+    return data.get(field)
 
 def filter(field,field_value): #Renvoie la liste des indexs de lignes de df pour chaque 
     #ligne qui matche field==field_value
@@ -38,7 +35,3 @@ def filter(field,field_value): #Renvoie la liste des indexs de lignes de df pour
     #La première ligne contenant des données correspont à l'index 0
     filtered_df = df.loc[df[field] == field_value]
     return filtered_df.index.tolist()
-
-
-
-
