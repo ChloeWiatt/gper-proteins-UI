@@ -1,7 +1,6 @@
 import pandas as pd
 
 list_field = [
-        "Entry",
         "Entry Name",
         "Protein names",
         "Gene Names",
@@ -10,17 +9,12 @@ list_field = [
         "Length",
         "Mass",
         "Tissue specificity",
-        "Subcellular location [CC]",
-        "Function [CC]",
-        "Involvement in disease",
-        "Mutagenesis",
-        "PubMed ID",
-        "DOI ID"
+        "Subcellular location [CC]"
     ]
 
 df = pd.read_csv("uniprot.csv")
 
-def extract_values(): #Renvoie un dictionnaire ou les clés 
+def extract_filters(): #Renvoie un dictionnaire ou les clés 
     #sont les élements de lists_field et les valeurs les listes sans redondance 
     #contenant les valeurs possibles de l'attribut
     data={column:df[column].unique().tolist() for column in list_field}
@@ -29,7 +23,7 @@ def extract_values(): #Renvoie un dictionnaire ou les clés
 def get_attribute_values(data,field): #Renvoie la liste des valeurs pour un attribut donné
     return data.get(field)
 
-def filter(fields,field_values): #Renvoie la liste des indexs de lignes de df pour chaque 
+def filter_results(fields,field_values): #Renvoie la liste des indexs de lignes de df pour chaque 
     #ligne qui matche field==field_value
     #La première ligne contenant des données correspont à l'index 0
     request=True
