@@ -1,39 +1,55 @@
+import time
 from selenium import webdriver
-from selenium.webdriver.firefox.options import Options
+from selenium.webdriver.common.keys import Keys
 
 
 def function_CopyPast(url, svg_file_name="webScrapping_svg.txt"):
 
-    # Configuration de Firefox
-    options = Options()
-    options.headless = True  # Exécution sans interface graphique (optionnel)
-    # Initialisation du driver
+    # Initialiser le navigateur Firefox
+    options = webdriver.FirefoxOptions()
+    options.add_argument("--headless")  # Optionnel : pour un mode sans interface graphique
     driver = webdriver.Firefox(options=options)
-    
+
     try:
-        driver.get(URL)
-        # Attente implicite pour le chargement de la page
-        driver.implicitly_wait(10)
-        # Récupération du contenu de la page
-        page_content = driver.page_source
-        # Écriture dans le fichier
-        with open(svg_file_name, "w", encoding="utf-8") as file:
-            file.write(page_content)
-            
+        # Ouvrir la page web
+        driver.get(url)
+        time.sleep(1)  # Attendre que la page se charge
+
+        """
+        # Trouver la barre de recherche (ajustez le sélecteur CSS selon la page)
+        search_box = driver.find_element("css selector", "input[type='text']")  # Changez le sélecteur si nécessaire
+        search_box.send_keys(mot_cle)
+        search_box.send_keys(Keys.RETURN)
+        time.sleep(3)  # Attendre les résultats
+        """ 
+        
+        # Sélectionner tout le contenu de la page
+        body = driver.find_element("tag name", "body")
+        body.send_keys(Keys.CONTROL, 'a')  # CTRL + A
+        body.send_keys(Keys.CONTROL, 'c')  # CTRL + C
+
+        # Récupérer le contenu copié et l'enregistrer dans un fichier texte
+        with open(svg_file_name, "w", encoding="utf-8") as fichier:
+            texte = driver.find_element("tag name", "body").text
+            texte_recadre = texte + ",\n"
+            fichier.write(texte_recadre)
+    
     finally:
+        # Fermer le navigateur
         driver.quit()
 
 def manage_drugbank_information(svg_file_name="webScrapping_svg.txt"):
     with open(svg_file_name, "r", encoding="utf-8") as file:
-        texte = file.read(page_content)
-    
-    texte = texte[25:417]
+        texte = file.readlines()
+
+    for line in texte[24:374]:
+        print(line[:-1])
 
 
 # Utilisation :
 svg_file_name = "webScrapping_svg.txt"
-file = open(svg_file_name, "w", encoding="utf-8")
-for line in file.readlines:
-    url = line[:-1]
-    function_CopyPast(url, svg_file_name)
-    manage_drugbank_information(svg_file_name)
+file = open(svg_file_name, "r", encoding="utf-8")
+url = "https://www.drugbank.ca/drugs/DB08558"
+function_CopyPast(url, svg_file_name)
+manage_drugbank_information(svg_file_name)
+file.close()
