@@ -34,8 +34,11 @@ def filter_results_uniprot(fields,field_values): #fields et field_values sont de
                 request &= (df[field[0]] >= value[0][0]) & (df[field[0]] <= value[0][1])
             else:
                 request &= (df[field[0]]==value[0])
-    filtered_df =df.loc[request]
-    return filtered_df.index.tolist()
+    if request:
+        return df.index.tolist()
+    else:    
+        filtered_df =df.loc[request]
+        return filtered_df.index.tolist()
 
 def get_values_for_rows_uniprot(list_index, list_fields):#Renvoie un dictionnaire où les clés sont les attributs de list_fields
     #et où les valeurs sont des listes où chaque élément correspond à la valeur de l'attribut pour une ligne 
@@ -43,3 +46,5 @@ def get_values_for_rows_uniprot(list_index, list_fields):#Renvoie un dictionnair
     for field in list_fields:
         dic[field] = df.loc[list_index,field].tolist()
     return dic
+
+print(filter_results_uniprot([[],[],[]],[[],[],[]]))
