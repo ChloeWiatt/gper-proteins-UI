@@ -46,5 +46,3 @@ def get_values_for_rows_uniprot(list_index, list_fields):#Renvoie un dictionnair
     for field in list_fields:
         dic[field] = df.loc[list_index,field].tolist()
     return dic
-
-print(filter_results_uniprot([[],[],[]],[[],[],[]]))
