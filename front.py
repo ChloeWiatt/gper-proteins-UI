@@ -1,12 +1,12 @@
 import streamlit as st
 from import_CSV import *
 
-filters_uniprot = extract_filters()
+filters_uniprot = extract_filters_uniprot()
 #clés = champs, valeurs = liste des valeurs prises par nos données pour ce champ
 filters_drugbank = {}
 filters_pdb = {}
 filters_chembl = {}
-filtered_results = get_values_for_rows(filter_results(["Organism"], ["Homo sapiens (Human)"]),["Entry","Entry Name","Organism"])
+filtered_results = get_values_for_rows_uniprot(filter_results_uniprot([["Organism"], ["Homo sapiens (Human)"]]),["Entry","Entry Name","Organism"])
 print(filtered_results)
 
 ##Section 1 : barre latérale (filtres intelligents)
