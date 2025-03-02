@@ -61,10 +61,25 @@ def filter_results_uniprot(dic):
                     if any(gene.upper() in gene_string for gene in selected_genes):
                         gene_names_filter.iloc[i] = True
         
+        # Handle sequence search separately
+        sequence_filter = None
+        if "Sequence" in dic and dic["Sequence"]:
+            sequence_query = dic["Sequence"].upper()
+            sequence_filter = pd.Series([False] * len(df_uniprot))
+            
+            # For each row in the data
+            for i, sequence in enumerate(df_uniprot["Sequence"]):
+                if pd.notna(sequence):
+                    # Convert to string and clean up whitespace
+                    sequence_str = str(sequence).upper().replace(" ", "")
+                    # Check if the query is in this sequence
+                    if sequence_query in sequence_str:
+                        sequence_filter.iloc[i] = True
+        
         # Process all other filters normally
         for field in dic.keys():
-            # Skip Gene Names as we're handling it separately
-            if field == "Gene Names":
+            # Skip Gene Names and Sequence as we're handling them separately
+            if field == "Gene Names" or field == "Sequence":
                 continue
                 
             if isinstance(dic[field], tuple):
@@ -76,9 +91,12 @@ def filter_results_uniprot(dic):
                         request_or |= (df_uniprot[field] == value)
                     request &= request_or
         
-        # Combine the gene names filter with other filters if it exists
+        # Combine the special filters with other filters if they exist
         if gene_names_filter is not None:
             request &= gene_names_filter
+            
+        if sequence_filter is not None:
+            request &= sequence_filter
             
         filtered_df = df_uniprot.loc[request]
         return filtered_df.index.tolist()

@@ -3,6 +3,9 @@ from import_CSV import *
 import py3Dmol
 import re
 import pandas as pd
+import requests
+import time
+from urllib.parse import quote
 
 # Extract filters and initialize filter dictionaries
 filters_uniprot = extract_filters_uniprot()
@@ -21,12 +24,10 @@ uniprot_selections = [
     "Length",
     "Mass",
     "Tissue specificity",
-    "Subcellular location [CC]",
     "Function [CC]",
     "Involvement in disease",
     "Mutagenesis",
     "PubMed ID",
-    "DOI ID",
     "PDB",
 ]
 
@@ -49,7 +50,6 @@ with st.sidebar:
             "has_disease": "Disease involvement",
             "has_mutations": "Mutation data",
             "has_function": "Functional annotation",
-            "has_location": "Subcellular location",
             "has_tissue": "Tissue specificity",
         }
 
@@ -72,7 +72,6 @@ with st.sidebar:
             ],
             "🧬 Genome": ["Gene Names", "Sequence"],
             "🔢 Numericals": ["Length", "Mass"],
-            "📍 Location": ["Tissue specificity", "Subcellular location [CC]"],
         }
 
         for expander, keys in expanders.items():
@@ -82,29 +81,34 @@ with st.sidebar:
                         st.markdown(f"**{key} (Da)**")
                     else:
                         st.markdown(f"**{key}**")
-                    values = filters_uniprot[key]
-                    if key in ["Length", "Mass"]:
-                        uniprot_choices.update(
-                            {
-                                key: st.slider(
-                                    "Select range",
-                                    min_value=min(values),
-                                    max_value=max(values),
-                                    value=(min(values), max(values)),
-                                )
-                            }
-                        )
-
+                    
+                    if key == "Sequence":
+                            # Champ de texte pour la recherche de séquence
+                            sequence_query = st.text_input(
+                                "Enter sequence or partial sequence",
+                                key="sequence_search",
+                                help="Enter a sequence pattern to find (e.g., 'AAA')"
+                            )
+                            uniprot_choices.update({"Sequence": sequence_query})
+                    elif key in ["Length", "Mass"]:
+                        values = filters_uniprot[key]
+                        uniprot_choices.update({
+                            key: st.slider(
+                                "Select range",
+                                min_value=min(values),
+                                max_value=max(values),
+                                value=(min(values), max(values)),
+                            )
+                        })
                     else:
-                        uniprot_choices.update(
-                            {
-                                key: st.multiselect(
-                                    f"Select {key}",
-                                    options=values,
-                                    label_visibility="collapsed",
-                                )
-                            }
-                        )
+                        values = filters_uniprot[key]
+                        uniprot_choices.update({
+                            key: st.multiselect(
+                                f"Select {key}",
+                                options=values,
+                                label_visibility="collapsed",
+                            )
+                        })
 
     # DrugBank filters
     with drugbank:
@@ -145,10 +149,10 @@ print(uniprot_choices)
 filtered_results = get_values_for_rows_uniprot(
     filter_results_uniprot(uniprot_choices), uniprot_selections
 )
-# Universal search bar
-search_query = st.text_input(
-    "🔍 Search by keyword, sequence or formula",
-    help="Ex: 'GPER1 human' or 'C28H34N6O4S'",
+
+# Ajoutez ce code juste après avoir chargé les résultats filtrés pour déboguer
+filtered_results = get_values_for_rows_uniprot(
+    filter_results_uniprot(uniprot_choices), uniprot_selections
 )
 
 # Display results count
@@ -237,6 +241,39 @@ if "presence_filters" in st.session_state:
         # Update results number for display
         results_number = len(indices_to_keep)
 
+# Filter results based on sequence query
+if "Sequence" in uniprot_choices and uniprot_choices["Sequence"]:
+    sequence_query = uniprot_choices["Sequence"].upper().strip()
+    
+    # Vérifier si nous avons réellement le champ Sequence dans les données
+    if not("Sequence" not in filtered_results or len(filtered_results["Sequence"]) == 0):
+        # Si nous avons des séquences, procéder à la recherche
+        indices_to_keep = []
+        
+        for i in range(results_number):
+            if pd.isna(filtered_results["Sequence"][i]):
+                continue
+                
+            # Nettoyer la séquence (enlever espaces, sauts de ligne)
+            clean_seq = "".join(filtered_results["Sequence"][i].split())
+            
+            # Vérifier si la séquence contient la sous-séquence recherchée
+            if sequence_query in clean_seq.upper():
+                indices_to_keep.append(i)
+        
+        # Met à jour les résultats filtrés
+        if indices_to_keep:
+            st.success(f"Found in {len(indices_to_keep)} sequence(s)")
+            filtered_display_results = {}
+            for key, values in filtered_results.items():
+                filtered_display_results[key] = [values[i] for i in indices_to_keep]
+            filtered_results = filtered_display_results
+            # Met à jour le nombre de résultats
+            results_number = len(indices_to_keep)
+        elif sequence_query:  # Si aucune correspondance n'a été trouvée
+            st.warning(f"Aucune séquence contenant '{sequence_query}' trouvée.")
+            results_number = 0
+
 # Then continue with your existing code to display results
 # Main view - either results listing or detail page
 if not st.session_state.show_detail_view:
@@ -257,17 +294,19 @@ if not st.session_state.show_detail_view:
                     )
 
                 # Display protein information
-                for key, value in filtered_results.items():
-                    if key != "Entry Name":
-                        if isinstance(value[i], float):
-                            continue
-                        elif key == "PDB":
-                            pdb_id = value[i].split(";")[0].strip('"')
-                            view = py3Dmol.view(query=f"pdb:{pdb_id}")
-                            view.setStyle({"cartoon": {"color": "spectrum"}})
-                            st.components.v1.html(view._make_html(), height=500)
-                        elif key != "PDB":
-                            st.markdown(f"**{key}**: {value[i]}")
+                for key in ["Entry","Protein names","Gene Names","Organism"]:
+                    if key in filtered_results:
+                        value = filtered_results[key]
+                        if key != "Entry Name":
+                            if isinstance(value[i], float):
+                                continue
+                            elif key == "PDB":
+                                pdb_id = value[i].split(";")[0].strip('"')
+                                view = py3Dmol.view(query=f"pdb:{pdb_id}")
+                                view.setStyle({"cartoon": {"color": "spectrum"}})
+                                st.components.v1.html(view._make_html(), height=500)
+                            elif key != "PDB":
+                                st.markdown(f"**{key}**: {value[i]}")
 else:
     # Detail view for selected protein
     protein_idx = st.session_state.selected_protein
@@ -276,9 +315,6 @@ else:
     if st.button("← Back to results"):
         st.session_state.show_detail_view = False
         st.rerun()
-
-    st.title(f"Detailed View: {filtered_results['Entry Name'][protein_idx]}")
-
     # Create tabs for different databases
     uniprot_tab, drugbank_tab, pdb_tab, chembl_tab = st.tabs(
         ["🧬 UniProt", "💊 DrugBank", "🔬 PDB", "🧪 ChEMBL"]
@@ -349,15 +385,82 @@ else:
                     # Display as a dataframe with clickable links
                     if mutations:
                         df = pd.DataFrame(mutations)
-                        st.write("**Mutations:**")
                         st.markdown(
                             df.to_html(escape=False),
                             unsafe_allow_html=True
                         )
                 elif field == "Mass":
                     st.markdown(f"**{field}:** {value} Da")
+                elif field == "Tissue specificity":
+                    # Remove the "TISSUE SPECIFICITY: " prefix and any trailing periods
+                    cleaned_value = value.replace("TISSUE SPECIFICITY: ", "").strip()
+                    cleaned_value = re.sub(r'\.$', '', cleaned_value).strip()
+                    
+                    # Extract all PubMed IDs
+                    pubmed_matches = re.findall(r'ECO:0000269\|PubMed:(\d+)', cleaned_value)
+                    if pubmed_matches:
+                        # Remove the entire ECO reference section
+                        cleaned_value = re.sub(r'{ECO:.*}', '', cleaned_value).strip()
+                        # Display the cleaned text
+                        st.markdown(f"**{field}:** {cleaned_value}")
+                        # Create links for all PubMed references
+                        pubmed_links = [f"[{id}](https://pubmed.ncbi.nlm.nih.gov/{id})" for id in pubmed_matches]
+                        st.markdown(f"🔗 PubMed References: {', '.join(pubmed_links)}")
+                    else:
+                        st.markdown(f"**{field}:** {cleaned_value}")
+                elif field == "Function [CC]":
+                    # Remove the "FUNCTION: " prefix and any trailing periods
+                    cleaned_value = value.replace("FUNCTION: ", "").strip()
+                    cleaned_value = re.sub(r'\.$', '', cleaned_value).strip()
+                    
+                    # Extract all PubMed IDs
+                    pubmed_matches = re.findall(r'PubMed:(\d+)', cleaned_value)
+                    if pubmed_matches:
+                        # Remove the entire ECO reference section
+                        cleaned_value = re.sub(r'{ECO:.*?}', '', cleaned_value).strip()
+                        # Clean up any remaining parenthetical PubMed references
+                        cleaned_value = re.sub(r'\(PubMed:[0-9,\s]+\)', '', cleaned_value).strip()
+                        # Display the cleaned text
+                        st.markdown(f"**{field}:** {cleaned_value}")
+                        # Create links for all PubMed references
+                        pubmed_links = [f"[{id}](https://pubmed.ncbi.nlm.nih.gov/{id})" for id in pubmed_matches]
+                        st.markdown(f"🔗 PubMed References: {', '.join(pubmed_links)}")
+                    else:
+                        st.markdown(f"**{field}:** {cleaned_value}")
+
+                elif field == "Involvement in disease":
+                    # Remove the "DISEASE: " prefix and any trailing periods
+                    cleaned_value = value.replace("DISEASE: ", "").strip()
+                    cleaned_value = re.sub(r'\.$', '', cleaned_value).strip()
+                    
+                    # Extract all PubMed IDs
+                    pubmed_matches = re.findall(r'PubMed:(\d+)', cleaned_value)
+                    if pubmed_matches:
+                        # Remove the entire ECO reference section
+                        cleaned_value = re.sub(r'{ECO:.*?}', '', cleaned_value).strip()
+                        # Remove MIM reference but keep the number
+                        cleaned_value = re.sub(r'\[MIM:(\d+)\]', r'(MIM: \1)', cleaned_value)
+                        # Display the cleaned text
+                        st.markdown(f"**{field}:** {cleaned_value}")
+                        # Create links for all PubMed references
+                        pubmed_links = [f"[{id}](https://pubmed.ncbi.nlm.nih.gov/{id})" for id in pubmed_matches]
+                        st.markdown(f"🔗 PubMed References: {', '.join(pubmed_links)}")
+                    else:
+                        st.markdown(f"**{field}:** {cleaned_value}")
                 elif field =="PDB":
                     continue
+                elif field == "PubMed ID":
+                    # Split the PubMed IDs and clean them
+                    pubmed_ids = [pid.strip() for pid in value.split(";") if pid.strip()]
+                    
+                    # Create the links
+                    st.markdown(f"**{field}:**")
+                    pubmed_links = []
+                    for pid in pubmed_ids:
+                        pubmed_links.append(f"[{pid}](https://pubmed.ncbi.nlm.nih.gov/{pid})")
+                    
+                    # Display all links with commas between them
+                    st.markdown(", ".join(pubmed_links))
                 else:
                     st.markdown(f"**{field}:** {value}")
                 st.divider()  # Add a divider between fields
