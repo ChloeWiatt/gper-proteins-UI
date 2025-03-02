@@ -1,6 +1,7 @@
 import pandas as pd
 
 list_field_uniprot = [
+        "Entry",
         "Entry Name",
         "Protein names",
         "Gene Names",
