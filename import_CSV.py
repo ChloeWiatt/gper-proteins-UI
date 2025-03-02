@@ -1,6 +1,7 @@
 import pandas as pd
 
 list_field = [
+        "Entry",
         "Entry Name",
         "Protein names",
         "Gene Names",
@@ -24,9 +25,9 @@ def get_attribute_values_uniprot(data,field): #Renvoie la liste des valeurs pour
     return data.get(field)
 
 def filter_results_uniprot(fields,field_values): #fields et field_values sont des listes de listes
-    #Renvoie la liste des indexs de lignes de df pour chaque 
-    #ligne qui matche field==field_value
-    #La première ligne contenant des données correspont à l'index 0
+    """Renvoie la liste des indexs de lignes de df pour chaque 
+    ligne qui matche field==field_value
+    La première ligne contenant des données correspont à l'index 0"""
     request=True
     for field,value in zip(fields, field_values):
         if (len(field)==1 and len(value)==1):

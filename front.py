@@ -5,13 +5,13 @@ import re
 import pandas as pd
 
 # Extract filters and initialize filter dictionaries
-filters_uniprot = extract_filters()
+filters_uniprot = extract_filters_uniprot()
 filters_drugbank = {}
 filters_pdb = {}
 filters_chembl = {}
 
 # Define fields to display from Uniprot
-uniprot_fields = [
+uniprot_selections = [
     "Entry",
     "Entry Name", 
     "Protein names",
@@ -30,11 +30,7 @@ uniprot_fields = [
     "PDB",
 ]
 
-# Get filtered results
-filtered_results = get_values_for_rows(
-    filter_results(["Organism"], ["Homo sapiens (Human)"]), 
-    uniprot_fields
-)
+
 
 ## Section 1: Sidebar (intelligent filters)
 with st.sidebar:
@@ -45,26 +41,36 @@ with st.sidebar:
 
     # Uniprot filters
     with uniprot:
-        uniprot_choices = []
-        for key, values in filters_uniprot.items():
-            with st.expander(key):
-                if key in ["Length", "Mass"]:
-                    uniprot_choices.append(
-                        st.slider(
-                            "Select range",
-                            min_value=min(values),
-                            max_value=max(values),
-                            value=(min(values), max(values)),
+        uniprot_choices = {}
+        expanders = {
+            "General informations": ["Entry","Entry Name", "Protein names", "Organism"],
+            "Genome": ["Gene Names","Sequence"],
+            "Numericals": ["Length", "Mass"],
+            "Location": ["Tissue specificity", "Subcellular location [CC]"]
+        }
+
+        for expander, keys in expanders.items():
+            with st.expander(expander):
+                for key in keys:
+                    st.markdown(f"**{key}**")
+                    values = filters_uniprot[key]
+                    if key in ["Length", "Mass"]:
+                        uniprot_choices.update({key:
+                            st.slider(
+                                "Select range",
+                                min_value=min(values),
+                                max_value=max(values),
+                                value=(min(values), max(values)),
+                            )}
                         )
-                    )
-                else:
-                    uniprot_choices.append(
-                        st.multiselect(
-                            f"Select {key}", 
-                            options=values, 
-                            label_visibility="collapsed"
+                    else:
+                        uniprot_choices.update({key:
+                            st.multiselect(
+                                f"Select {key}",
+                                options=values,
+                                label_visibility="collapsed"
+                            )}
                         )
-                    )
 
     # DrugBank filters
     with drugbank:
@@ -106,7 +112,12 @@ with st.sidebar:
                 )
 
 ## Section 2: Main area (search and results)
-
+# Get filtered results
+print(uniprot_choices)
+filtered_results = get_values_for_rows_uniprot(
+    filter_results_uniprot([], uniprot_choices), 
+    uniprot_selections
+)
 # Universal search bar
 search_query = st.text_input(
     "🔍 Recherche par mot-clé, séquence ou formule",
@@ -122,13 +133,15 @@ with st.container():
     for i in range(results_number):
         with st.expander(f"{filtered_results['Entry Name'][i]}", expanded=False):
             for key, value in filtered_results.items():
-                if key != "Entry" and key != "Entry Name":
-                    if key == "PDB" and isinstance(value[i], str):
+                if key != "Entry Name":
+                    if isinstance(value[i], float):
+                        continue
+                    elif key == "PDB":
                         pdb_id = value[i].split(";")[0].strip('"')
                         view = py3Dmol.view(query=f"pdb:{pdb_id}")
                         view.setStyle({"cartoon": {"color": "spectrum"}})
                         st.components.v1.html(view._make_html(), height=500)
-                    elif key == "Mutagenesis" and not(isinstance(value[i], float)):
+                    elif key == "Mutagenesis" :
                         # Parse mutagenesis data
                         mutations = []
                         raw_data = value[i].split("MUTAGEN ")
