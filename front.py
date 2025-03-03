@@ -6,7 +6,7 @@ import pandas as pd
 import requests
 import time
 from urllib.parse import quote
-
+from subcell_visualization import display_subcellular_location
 # Extract filters and initialize filter dictionaries
 filters_uniprot = extract_filters_uniprot()
 filters_drugbank = {}
@@ -447,6 +447,11 @@ else:
                         st.markdown(f"🔗 PubMed References: {', '.join(pubmed_links)}")
                     else:
                         st.markdown(f"**{field}:** {cleaned_value}")
+                elif field == "Subcellular location [CC]":
+                    #st.markdown(f"**{field}:** {value}")
+                    # Add the visualization below the text
+                    st.markdown("### Subcellular Location Visualization")
+                    display_subcellular_location(value)
                 elif field =="PDB":
                     continue
                 elif field == "PubMed ID":
