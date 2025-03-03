@@ -7,11 +7,11 @@ from subcell_visualization import display_subcellular_location
 
 # Extract filters and initialize filter dictionaries
 filters_uniprot = extract_filters_uniprot()
-filters_drugbank = {}
+filters_drugbank = extract_filters_drugbank()
 filters_pdb = {}
 filters_chembl = {}
 
-# Define fields to display from Uniprot
+# Define fields to display
 uniprot_selections = [
     "Entry",
     "Entry Name",
@@ -30,6 +30,36 @@ uniprot_selections = [
     "PDB",
 ]
 
+drugbank_selections = [
+     "DrugBank ID",
+     "Name",
+     "Type",
+     "Groups",
+     "Description",
+     "Synonyms",
+     "Brand Names",
+     "Indication",
+     "Pharmacodynamics",
+     "Mechanism of Action",
+     "Absorption",
+     "Metabolism",
+     "Route of Elimination",
+     "Protein Binding",
+     "Drug Interactions",
+     "Food Interactions",
+     "Affected Organisms",
+     "Chemical Formula",
+     "Molecular Weight",
+     "IUPAC Name",
+     "CAS Number",
+     "SMILES",
+     "InChI",
+     "InChIKey",
+     "UNII",
+     "ATC Codes",
+     "Patents",
+     "Spectra"
+]
 
 ## Section 1: Sidebar (intelligent filters)
 with st.sidebar:
@@ -111,14 +141,67 @@ with st.sidebar:
 
     # DrugBank filters
     with drugbank:
-        drugbank_choices = []
-        for key, values in filters_drugbank.items():
-            with st.expander(key):
-                drugbank_choices.append(
-                    st.multiselect(
-                        f"Select {key}", options=values, label_visibility="collapsed"
-                    )
-                )
+        drugbank_choices = {}
+        expanders = {
+            "💊 General": [
+                "DrugBank ID",
+                "Name",
+                "Type",
+                "Groups",
+                "Synonyms",
+                "Brand Names",
+            ],
+            "📊 Properties": [
+                "Absorption",
+                "Protein Binding",
+                "Molecular Weight",
+            ],
+            "🧪 Chemistry": [
+                "Chemical Formula",
+                "IUPAC Name",
+                "CAS Number",
+                "InChIKey",
+                "UNII",
+            ],
+            "🏥 Clinical": [
+                "ATC Codes",
+                "Food Interactions",
+                "Affected Organisms",
+                "Patents",
+                "Spectra",
+            ],
+        }
+
+        for expander, keys in expanders.items():
+            with st.expander(expander):
+                for key in keys:
+                    st.markdown(f"**{key}**")
+                    
+                    if key in filters_drugbank:
+                        values = filters_drugbank[key]
+                        
+                        if key in ["Absorption", "Protein Binding", "Molecular Weight"]:
+                            # Gérer les filtres numériques avec des sliders
+                            if values:
+                                drugbank_choices.update({
+                                    key: st.slider(
+                                        f"Select {key} range",
+                                        min_value=min(values),
+                                        max_value=max(values),
+                                        value=(min(values), max(values)),
+                                        step=0.1 if key != "Molecular Weight" else 1.0
+                                    )
+                                    })
+                        else:
+                            # Multiselect pour tous les autres filtres
+                            drugbank_choices.update({
+                                key: st.multiselect(
+                                    f"Select {key}",
+                                    options=values,
+                                    label_visibility="collapsed",
+                                )
+                            })
+
 
     # PDB filters
     with pdb:
@@ -145,11 +228,6 @@ with st.sidebar:
 ## Section 2: Main area (search and results)
 # Get filtered results
 print(uniprot_choices)
-filtered_results = get_values_for_rows_uniprot(
-    filter_results_uniprot(uniprot_choices), uniprot_selections
-)
-
-# Ajoutez ce code juste après avoir chargé les résultats filtrés pour déboguer
 filtered_results = get_values_for_rows_uniprot(
     filter_results_uniprot(uniprot_choices), uniprot_selections
 )
@@ -272,6 +350,18 @@ if "Sequence" in uniprot_choices and uniprot_choices["Sequence"]:
         elif sequence_query:  # Si aucune correspondance n'a été trouvée
             st.warning(f"Aucune séquence contenant '{sequence_query}' trouvée.")
             results_number = 0
+
+# Ajouter cette section après le filtrage UniProt pour récupérer les résultats filtrés de DrugBank
+filtered_drugbank_results = {}
+if drugbank_choices:
+    filtered_drugbank_indices = filter_results_drugbank(drugbank_choices)
+    filtered_drugbank_results = {
+        col: df_drugbank.loc[filtered_drugbank_indices, col].tolist() 
+        for col in drugbank_selections if col in df_drugbank.columns
+    }
+    drugbank_results_number = len(filtered_drugbank_indices)
+
+
 
 # Then continue with your existing code to display results
 # Main view - either results listing or detail page
@@ -471,7 +561,30 @@ else:
 
     with drugbank_tab:
         st.subheader("DrugBank Information")
-        st.info("DrugBank data will be displayed here.")
+        
+        if not filtered_drugbank_results:
+            st.info("No DrugBank data available for this protein.")
+        else:
+            # Afficher les données DrugBank
+            for field in drugbank_selections:
+                if field in filtered_drugbank_results and len(filtered_drugbank_results[field]) > 0:
+                    value = filtered_drugbank_results[field][0]  # Prendre la première entrée correspondante
+                    
+                    # Ignorer les valeurs vides
+                    if pd.isna(value) or value == "":
+                        continue
+                    
+                    # Formatage spécial pour certains champs
+                    if field == "Molecular Weight":
+                        st.markdown(f"**{field}:** {value} Da")
+                    elif field == "Chemical Formula":
+                        # Afficher la formule chimique avec mise en forme
+                        formula = re.sub(r'(\d+)', r'<sub>\1</sub>', value)
+                        st.markdown(f"**{field}:** {formula}", unsafe_allow_html=True)
+                    else:
+                        st.markdown(f"**{field}:** {value}")
+                    
+                    st.divider()
 
     with pdb_tab:
         st.subheader("PDB Structures")
