@@ -369,12 +369,9 @@ if "Sequence" in uniprot_choices and uniprot_choices["Sequence"]:
 # Ajouter cette section après le filtrage UniProt pour récupérer les résultats filtrés de DrugBank
 filtered_drugbank_results = {}
 if drugbank_choices:
+    print(drugbank_choices)
     filtered_drugbank_indices = filter_results_drugbank(drugbank_choices)
-    filtered_drugbank_results = {
-        col: df_drugbank.loc[filtered_drugbank_indices, col].tolist()
-        for col in drugbank_selections
-        if col in df_drugbank.columns
-    }
+    
     drugbank_results_number = len(filtered_drugbank_indices)
 
 

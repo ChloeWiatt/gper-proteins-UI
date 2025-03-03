@@ -18,12 +18,9 @@ list_field_drugbank = ["DrugBank ID",
                        "Type","Groups",
                        "Description",
                        "Synonyms",
-                       "Absorption",
-                       "Protein Binding",
                        "Food Interactions",
                        "Affected Organisms",
                        "Chemical Formula",
-                       "Molecular Weight",
                        "IUPAC Name",
                        "CAS Number",
                        "InChIKey",
@@ -289,3 +286,4 @@ def get_values_for_rows_drugbank(list_index_uniprot,list_index,list_fields):#Ren
                 list_dic.append(dic)
         return list_dic
     
+print(filter_results_drugbank({'DrugBank ID': ['DB01193'], 'Name': [], 'Type': [], 'Groups': [], 'Synonyms': [], 'Chemical Formula': [], 'IUPAC Name': [], 'CAS Number': [], 'InChIKey': [], 'UNII': [], 'Food Interactions': [], 'Affected Organisms': [], 'Patents': [], 'Spectra': []}))
