@@ -241,8 +241,9 @@ with st.sidebar:
 ## Section 2: Main area (search and results)
 # Get filtered results
 print(uniprot_choices)
+filtered_uniprot_indices = filter_results_uniprot(uniprot_choices)
 filtered_results = get_values_for_rows_uniprot(
-    filter_results_uniprot(uniprot_choices), uniprot_selections
+    filtered_uniprot_indices, uniprot_selections
 )
 
 # Display results count
@@ -371,7 +372,8 @@ filtered_drugbank_results = {}
 if drugbank_choices:
     print(drugbank_choices)
     filtered_drugbank_indices = filter_results_drugbank(drugbank_choices)
-    
+    filtered_drugbank_results = get_values_for_rows_drugbank(filtered_uniprot_indices,filtered_drugbank_indices,drugbank_selections)
+    print(filtered_drugbank_results)
     drugbank_results_number = len(filtered_drugbank_indices)
 
 
