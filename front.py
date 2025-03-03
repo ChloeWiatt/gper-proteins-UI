@@ -7,9 +7,6 @@ from subcell_visualization import display_subcellular_location
 
 # Extract filters and initialize filter dictionaries
 filters_uniprot = extract_filters_uniprot()
-filters_drugbank = extract_filters_drugbank()
-filters_pdb = {}
-filters_chembl = {}
 
 # Define fields to display
 uniprot_selections = [
@@ -32,36 +29,6 @@ uniprot_selections = [
 ]
 
 st.set_page_config(page_title="GPCR-GPER Data Explorer")
-drugbank_selections = [
-    "DrugBank ID",
-    "Name",
-    "Type",
-    "Groups",
-    "Description",
-    "Synonyms",
-    "Brand Names",
-    "Indication",
-    "Pharmacodynamics",
-    "Mechanism of Action",
-    "Absorption",
-    "Metabolism",
-    "Route of Elimination",
-    "Protein Binding",
-    "Drug Interactions",
-    "Food Interactions",
-    "Affected Organisms",
-    "Chemical Formula",
-    "Molecular Weight",
-    "IUPAC Name",
-    "CAS Number",
-    "SMILES",
-    "InChI",
-    "InChIKey",
-    "UNII",
-    "ATC Codes",
-    "Patents",
-    "Spectra",
-]
 
 ## Section 1: Sidebar (intelligent filters)
 with st.sidebar:
@@ -89,7 +56,7 @@ with st.sidebar:
             st.session_state.presence_filters[key] = st.checkbox(label)
 
     # Multi-database filters with tabs
-    uniprot, drugbank, pdb, chembl = st.tabs(["Uniprot", "DrugBank", "PDB", "ChEMBL"])
+    uniprot, autre = st.tabs(["Uniprot", " "])
 
     # Uniprot filters
     with uniprot:
@@ -144,99 +111,6 @@ with st.sidebar:
                                 )
                             }
                         )
-
-    # DrugBank filters
-    with drugbank:
-        drugbank_choices = {}
-        expanders = {
-            "💊 General": [
-                "DrugBank ID",
-                "Name",
-                "Type",
-                "Groups",
-                "Synonyms",
-                "Brand Names",
-            ],
-            "📊 Properties": [
-                "Absorption",
-                "Protein Binding",
-                "Molecular Weight",
-            ],
-            "🧪 Chemistry": [
-                "Chemical Formula",
-                "IUPAC Name",
-                "CAS Number",
-                "InChIKey",
-                "UNII",
-            ],
-            "🏥 Clinical": [
-                "ATC Codes",
-                "Food Interactions",
-                "Affected Organisms",
-                "Patents",
-                "Spectra",
-            ],
-        }
-
-        for expander, keys in expanders.items():
-            with st.expander(expander):
-                for key in keys:
-                    st.markdown(f"**{key}**")
-
-                    if key in filters_drugbank:
-                        values = filters_drugbank[key]
-
-                        if key in ["Absorption", "Protein Binding", "Molecular Weight"]:
-                            # Gérer les filtres numériques avec des sliders
-                            if values:
-                                drugbank_choices.update(
-                                    {
-                                        key: st.slider(
-                                            f"Select {key} range",
-                                            min_value=min(values),
-                                            max_value=max(values),
-                                            value=(min(values), max(values)),
-                                            step=(
-                                                0.1
-                                                if key != "Molecular Weight"
-                                                else 1.0
-                                            ),
-                                        )
-                                    }
-                                )
-                        else:
-                            # Multiselect pour tous les autres filtres
-                            drugbank_choices.update(
-                                {
-                                    key: st.multiselect(
-                                        f"Select {key}",
-                                        options=values,
-                                        label_visibility="collapsed",
-                                    )
-                                }
-                            )
-
-    # PDB filters
-    with pdb:
-        pdb_choices = []
-        for key, values in filters_pdb.items():
-            with st.expander(key):
-                pdb_choices.append(
-                    st.multiselect(
-                        f"Select {key}", options=values, label_visibility="collapsed"
-                    )
-                )
-
-    # ChEMBL filters
-    with chembl:
-        chembl_choices = []
-        for key, values in filters_chembl.items():
-            with st.expander(key):
-                chembl_choices.append(
-                    st.multiselect(
-                        f"Select {key}", options=values, label_visibility="collapsed"
-                    )
-                )
 
 ## Section 2: Main area (search and results)
 # Get filtered results
@@ -367,16 +241,6 @@ if "Sequence" in uniprot_choices and uniprot_choices["Sequence"]:
             st.warning(f"Aucune séquence contenant '{sequence_query}' trouvée.")
             results_number = 0
 
-# Ajouter cette section après le filtrage UniProt pour récupérer les résultats filtrés de DrugBank
-filtered_drugbank_results = {}
-if drugbank_choices:
-    print(drugbank_choices)
-    filtered_drugbank_indices = filter_results_drugbank(drugbank_choices)
-    filtered_drugbank_results = get_values_for_rows_drugbank(filtered_uniprot_indices,filtered_drugbank_indices,drugbank_selections)
-    print(filtered_drugbank_results)
-    drugbank_results_number = len(filtered_drugbank_indices)
-
-
 # Then continue with your existing code to display results
 # Main view - either results listing or detail page
 if not st.session_state.show_detail_view:
@@ -419,8 +283,8 @@ else:
         st.session_state.show_detail_view = False
         st.rerun()
     # Create tabs for different databases
-    uniprot_tab, drugbank_tab, pdb_tab, chembl_tab = st.tabs(
-        ["🧬 UniProt", "💊 DrugBank", "🔬 3D Structure", "🧪 ChEMBL"]
+    uniprot_tab, pdb_tab = st.tabs(
+        ["🧬 UniProt", "🔬 3D Structure"]
     )
 
     with uniprot_tab:
@@ -593,38 +457,6 @@ else:
                     st.markdown(f"**{field}:** {value}")
                 st.divider()  # Add a divider between fields
 
-    with drugbank_tab:
-        st.subheader("DrugBank Information")
-
-        if not filtered_drugbank_results:
-            st.info("No DrugBank data available for this protein.")
-        else:
-            # Afficher les données DrugBank
-            for field in drugbank_selections:
-                if (
-                    field in filtered_drugbank_results
-                    and len(filtered_drugbank_results[field]) > 0
-                ):
-                    value = filtered_drugbank_results[field][
-                        0
-                    ]  # Prendre la première entrée correspondante
-
-                    # Ignorer les valeurs vides
-                    if pd.isna(value) or value == "":
-                        continue
-
-                    # Formatage spécial pour certains champs
-                    if field == "Molecular Weight":
-                        st.markdown(f"**{field}:** {value} Da")
-                    elif field == "Chemical Formula":
-                        # Afficher la formule chimique avec mise en forme
-                        formula = re.sub(r"(\d+)", r"<sub>\1</sub>", value)
-                        st.markdown(f"**{field}:** {formula}", unsafe_allow_html=True)
-                    else:
-                        st.markdown(f"**{field}:** {value}")
-
-                    st.divider()
-
     with pdb_tab:
         st.subheader("3D Structures View")
 
@@ -695,7 +527,3 @@ else:
             pd.isna(alphafold_value) or not alphafold_value
         ):
             st.info("No 3D structures available for this protein.")
-
-    with chembl_tab:
-        st.subheader("ChEMBL Data")
-        st.info("ChEMBL chemical and bioactivity data will be displayed here.")
