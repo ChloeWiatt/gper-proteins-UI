@@ -3,10 +3,8 @@ from import_CSV import *
 import py3Dmol
 import re
 import pandas as pd
-import requests
-import time
-from urllib.parse import quote
 from subcell_visualization import display_subcellular_location
+
 # Extract filters and initialize filter dictionaries
 filters_uniprot = extract_filters_uniprot()
 filters_drugbank = {}
@@ -25,6 +23,7 @@ uniprot_selections = [
     "Mass",
     "Tissue specificity",
     "Function [CC]",
+    "Subcellular location [CC]",
     "Involvement in disease",
     "Mutagenesis",
     "PubMed ID",
