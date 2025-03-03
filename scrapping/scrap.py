@@ -1,5 +1,4 @@
 # Import necessary libraries
-import pandas as pd
 from selenium import webdriver
 from selenium.webdriver.edge.service import Service as EdgeService
 from selenium.webdriver.edge.options import Options as EdgeOptions
@@ -9,7 +8,6 @@ import time
 import csv
 import random
 from tqdm import tqdm
-import os
 import re
 
 
