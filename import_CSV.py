@@ -34,6 +34,60 @@ list_field_drugbank = ["DrugBank ID",
 df_uniprot = pd.read_csv("uniprot.csv")
 df_drugbank = pd.read_csv("drugbank.csv")
 
+def get_uniprot_drugbank():
+    """
+    Return indices of rows in df_drugbank that match DrugBank IDs found in df_uniprot,
+    preserving the order of data in uniprot.csv
+    """
+    # Initialize a list to store drugbank indices for each row in uniprot
+    # Use None for rows that don't have DrugBank entries
+    result = [None] * len(df_uniprot)
+    
+    # Find rows in df_uniprot that have DrugBank entries
+    request = (~pd.isna(df_uniprot["DrugBank"])) & (df_uniprot["DrugBank"] != "")
+    
+    # Get the list of indices with DrugBank entries
+    uniprot_indices = df_uniprot[request].index.tolist()
+    
+    # Process only rows that have DrugBank entries
+    for idx in uniprot_indices:
+        # Extract DrugBank IDs for this uniprot entry
+        drugbank_ids = parse_drugbank_ids(df_uniprot.loc[idx, "DrugBank"])
+        drugbank_ids = list(set(drugbank_ids))  # Remove duplicates
+        matched_indices = []
+        for db_id in drugbank_ids:
+            mask = df_drugbank["DrugBank ID"] == db_id
+            if mask.any():
+                matched_indices.extend(df_drugbank[mask].index.tolist())
+        
+        # Store the matched indices at the corresponding position
+        result[idx] = matched_indices
+    
+    # Filter out None entries if you only want results for rows with matches
+    result = [indices for indices in result if indices is not None]
+    
+    return result
+
+def parse_drugbank_ids(text):
+    """
+    Parse a text containing DrugBank IDs formatted as "DBXXXXX; Name." and return a list of DrugBank IDs.
+    """
+    if pd.isna(text) or not text:
+        return []
+    
+    # Split by quotes and semicolons
+    parts = text.split('"')
+    ids = []
+    
+    for part in parts:
+        part = part.strip()
+        if part.startswith('DB'):
+            # Extract the part before the semicolon
+            db_id = part.split(';')[0].strip()
+            ids.append(db_id)
+            
+    return ids
+
 def extract_filters_uniprot():
     # Get your original filters first (your existing code)
     filters = {column:df_uniprot[column].unique().tolist() for column in list_field_uniprot}
@@ -219,9 +273,19 @@ def filter_results_drugbank(dic):
         filtered_df = df_drugbank.loc[request]
         return filtered_df.index.tolist()
 
-def get_values_for_rows_drugbank(list_index, list_fields):#Renvoie un dictionnaire où les clés sont les attributs de list_fields
-    #et où les valeurs sont des listes où chaque élément correspond à la valeur de l'attribut pour une ligne 
-    dic = {}
-    for field in list_fields:
-        dic[field] = df_drugbank.loc[list_index,field].tolist()
-    return dic
+def get_values_for_rows_drugbank(list_index_uniprot,list_index,list_fields):#Renvoie un dictionnaire où les clés sont les attributs de list_fields
+    #et où les valeurs sont des listes où chaque élément correspond à la valeur de l'attribut pour une ligne
+
+    if 9 not in list_index_uniprot and 10 not in list_index_uniprot and 12 not in list_index_uniprot:
+        return []
+    else:
+
+        list_index_drugbank_uniprot = get_uniprot_drugbank()
+        list_dic = []
+        for list_index_drugbank in list_index_drugbank_uniprot:
+            dic = {}
+            for field in list_fields:
+                dic[field] = df_drugbank.loc[list(set(list_index_drugbank)&set(list_index)),field].tolist()
+                list_dic.append(dic)
+        return list_dic
+    

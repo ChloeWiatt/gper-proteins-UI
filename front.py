@@ -355,11 +355,16 @@ if "Sequence" in uniprot_choices and uniprot_choices["Sequence"]:
 filtered_drugbank_results = {}
 if drugbank_choices:
     filtered_drugbank_indices = filter_results_drugbank(drugbank_choices)
-    filtered_drugbank_results = {
-        col: df_drugbank.loc[filtered_drugbank_indices, col].tolist() 
-        for col in drugbank_selections if col in df_drugbank.columns
-    }
-    drugbank_results_number = len(filtered_drugbank_indices)
+    filtered_drugbank_results = get_values_for_rows_drugbank(filtered_results,filtered_drugbank_indices,["DrugBank ID",
+                       "Name",
+                       "Type","Groups",
+                       "Description",
+                       "Synonyms",
+                       "Absorption",
+                       "Protein Binding",
+                       "Food Interactions",
+                       "Affected Organisms",
+                       "Chemical Formula"])
 
 
 
