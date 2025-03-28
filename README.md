@@ -84,8 +84,10 @@ Run the application by starting both the backend and frontend servers:
 
 ## 👥 Contributors
 
-- [Your Name](https://github.com/yourusername)
-- [Collaborator Name](https://github.com/collaborator)
+- Chloé WIATT
+- Mohamed Emine BASSOUM
+- Arthur JEANNE
+- Lucas AUTEF
 
 ## 📚 Resources
 
